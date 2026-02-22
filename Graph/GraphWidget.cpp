@@ -41,7 +41,6 @@ void GraphWidget::setGraph(const std::vector<W_Vertex> &v, const std::vector<W_E
     this->celestialObjectsPtr = objects;
     update();
 }
-
 void GraphWidget::mouseDoubleClickEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         QPoint clickPt = event->position().toPoint();
@@ -52,20 +51,34 @@ void GraphWidget::mouseDoubleClickEvent(QMouseEvent *event) {
             if (obj->getType() == "StarSystem") {
                 StarSystem *system = dynamic_cast<StarSystem *>(obj);
                 if (system) {
-                    double starRadius = 24.0 * 3.0;
-                    double orbitStart = calculateOrbitStart(system, 24.0);
+                    double painterScale = 3.0;
+                    double starRadius = 24.0;
+                    double orbitStart = calculateOrbitStart(system, starRadius);
 
-                    QPointF center(width() / 2.0, height() / 2.0);
-                    double effectiveScale = 3.0;
+                    double maxOrbitAU = 0.0;
+                    for (auto* p : system->getPlanets()) {
+                        if (p->getOrbit() > maxOrbitAU) maxOrbitAU = p->getOrbit();
+                    }
+                    if (maxOrbitAU < 0.001) maxOrbitAU = 1.0;
+
+                    double physScreenLimit = std::min(width(), height()) / 2.0 - 40.0;
+                    double localScreenLimit = physScreenLimit / painterScale;
+
+                    double scaleFactor = (localScreenLimit - orbitStart) / maxOrbitAU;
+                    if (scaleFactor < 0.1) scaleFactor = 0.1;
+                    if (scaleFactor > 40.0) scaleFactor = 40.0;
+
+                    QPointF screenCenter(width() / 2.0, height() / 2.0);
 
                     for (size_t i = 0; i < system->getPlanets().size(); ++i) {
                         Planet *planet = system->getPlanets()[i];
 
-                        QPointF offset = calculatePlanetOffset(planet, i, system->getPlanets().size(), orbitStart);
+                        QPointF localOffset = calculatePlanetOffset(planet, orbitStart, scaleFactor);
 
-                        QPointF planetPos = center + (offset * effectiveScale);
+                        QPointF screenOffset(localOffset.x() * painterScale, localOffset.y() * painterScale);
+                        QPointF planetPos = screenCenter + screenOffset;
 
-                        double clickRadius = 30.0;
+                        double clickRadius = 25.0;
                         double dx = clickPt.x() - planetPos.x();
                         double dy = clickPt.y() - planetPos.y();
 
@@ -78,7 +91,6 @@ void GraphWidget::mouseDoubleClickEvent(QMouseEvent *event) {
                 }
             }
         } else {
-            QPoint clickPt = event->position().toPoint();
             for (size_t i = 0; i < vertices.size(); ++i) {
                 const auto &vertex = vertices[i];
                 if (vertex.id < 0) continue;
@@ -93,7 +105,6 @@ void GraphWidget::mouseDoubleClickEvent(QMouseEvent *event) {
     }
     QWidget::mouseDoubleClickEvent(event);
 }
-
 void GraphWidget::zoomToPlanet(int planetIndex) {
     isPlanetMode = true;
     detailedPlanetIndex = planetIndex;
@@ -516,57 +527,50 @@ void GraphWidget::paintEvent(QPaintEvent *event) {
                 painter.drawEllipse(center, glowRadius, glowRadius);
 
                 painter.setBrush(starColor);
-
                 painter.drawEllipse(center, starRadius, starRadius);
 
-                painter.setPen(QPen(QColor(200, 200, 200), 2));
-                QFont font = painter.font();
-                font.setPointSize(8);
-                font.setBold(false);
-                font.setFamily("Ravie");
-                painter.setFont(font);
-                painter.drawText(QPointF(focusedV.x - starRadius - 170,
-                                         focusedV.y + starRadius + 85),
-                                 focusedV.name);
+                painter.setBrush(starColor);
+                painter.drawEllipse(center, starRadius, starRadius);
+
+                double painterScale = 3.0;
+
+                double maxOrbitAU = 0.0;
+                for (auto* p : system->getPlanets()) {
+                    if (p->getOrbit() > maxOrbitAU) maxOrbitAU = p->getOrbit();
+                }
+                if (maxOrbitAU < 0.001) maxOrbitAU = 1.0;
+
+                double physScreenLimit = std::min(width(), height()) / 2.0 - 40.0;
+                double localScreenLimit = physScreenLimit / painterScale;
 
                 double orbitStart = calculateOrbitStart(system, starRadius);
 
-                static RandomGenerator rng;
-                for (size_t i = 0; i < system->getPlanets().size(); ++i) {
-                    Planet *planetPtr = system->getPlanets()[i];
-                    Planet &planet = *planetPtr;
-                    if (planet.getColor() == QColor(0, 0, 0) || planet.getColor() == QColor()) {
-                        planet.setColor(rng.getRandomColor());
-                    }
-                }
+                double scaleFactor = (localScreenLimit - orbitStart) / maxOrbitAU;
+                if (scaleFactor < 0.1) scaleFactor = 0.1;
+                if (scaleFactor > 40.0) scaleFactor = 40.0;
 
                 for (size_t i = 0; i < system->getPlanets().size(); ++i) {
                     Planet *planet = system->getPlanets()[i];
 
-                    QPointF offset = calculatePlanetOffset(planet, i, system->getPlanets().size(), orbitStart);
+                    QPointF offset = calculatePlanetOffset(planet, orbitStart, scaleFactor);
+                    QPointF planetCenter(center.x() + offset.x(), center.y() + offset.y());
 
-                    QPointF planetCenter(focusedV.x + offset.x(), focusedV.y + offset.y());
-
-                    double currentOrbitRadius = std::sqrt(offset.x() * offset.x() + offset.y() * offset.y());
-
-                    painter.setPen(QPen(Qt::darkGray, 1, Qt::DotLine));
+                    double orbitRadiusPx = std::sqrt(offset.x()*offset.x() + offset.y()*offset.y());
+                    painter.setPen(QPen(QColor(255, 255, 255, 40), 0, Qt::DotLine));
                     painter.setBrush(Qt::NoBrush);
-                    painter.drawEllipse(center, currentOrbitRadius, currentOrbitRadius);
+                    painter.drawEllipse(center, orbitRadiusPx, orbitRadiusPx);
                     painter.setPen(Qt::NoPen);
 
-                    double minMass = std::numeric_limits<double>::max();
-                    double maxMass = std::numeric_limits<double>::lowest();
-                    for (auto *p: system->getPlanets()) {
-                        minMass = std::min(minMass, p->getMass());
-                        maxMass = std::max(maxMass, p->getMass());
-                    }
-                    if (abs(maxMass - minMass) < 0.001) maxMass = minMass + 1.0;
-
+                    double minMass = 0.0001;
+                    double maxMass = 1000.0;
                     double massNorm = (planet->getMass() - minMass) / (maxMass - minMass);
-                    double radius2 = 4.0 + 8.0 * massNorm;
+                    if(massNorm > 1.0) massNorm = 1.0;
+                    if(massNorm < 0.0) massNorm = 0.0;
+
+                    double localRadius = 2.0 + 4.0 * massNorm;
 
                     painter.setBrush(planet->getColor());
-                    painter.drawEllipse(planetCenter, radius2, radius2);
+                    painter.drawEllipse(planetCenter, localRadius, localRadius);
                 }
             }
         }
@@ -639,52 +643,7 @@ void GraphWidget::paintEvent(QPaintEvent *event) {
 
                     painter.setBrush(starColor);
                     painter.drawEllipse(vCenter, vertexRadius, vertexRadius);
-                    double maxOrbitAU = 0.0;
-                    for (auto* p : system->getPlanets()) {
-                        if (p->getOrbit() > maxOrbitAU) maxOrbitAU = p->getOrbit();
-                    }
 
-                    // Якщо планет немає або орбіти нульові, беремо дефолт
-                    if (maxOrbitAU < 0.1) maxOrbitAU = 10.0;
-
-                    // Доступний радіус екрану (половина ширини/висоти) мінус відступи
-                    double screenLimit = std::min(width(), height()) / 2.0 - vertexRadius - 40.0;
-
-                    // Скільки пікселів в 1 AU, щоб найбільша планета влізла в екран?
-                    double scaleFactor = screenLimit / maxOrbitAU;
-
-                    // Обмеження, щоб планети не стали мікроскопічними або гігантськими
-                    // Якщо планет мало і вони близько, не робимо масштаб більше 40 пікселів за AU
-                    if (scaleFactor > 40.0) scaleFactor = 40.0;
-
-                    double orbitStart = calculateOrbitStart(system, vertexRadius);
-
-                    // 3. МАЛЮВАННЯ ПЛАНЕТ З НОВИМ МАСШТАБОМ
-                    for (size_t i = 0; i < system->getPlanets().size(); ++i) {
-                        Planet *planet = system->getPlanets()[i];
-
-                        // Передаємо scaleFactor!
-                        QPointF offset = calculatePlanetOffset(planet, orbitStart, scaleFactor);
-
-                        QPointF planetCenter(vertex.x + offset.x(), vertex.y + offset.y());
-
-                        // Малюємо орбіту (тоненьку)
-                        double orbitRadiusPx = std::sqrt(offset.x()*offset.x() + offset.y()*offset.y());
-                        painter.setPen(QPen(QColor(255, 255, 255, 30), 1, Qt::DotLine));
-                        painter.setBrush(Qt::NoBrush);
-                        painter.drawEllipse(Qt::center, orbitRadiusPx, orbitRadiusPx);
-                        painter.setPen(Qt::NoPen);
-
-                        // Малюємо планету
-                        double minMass = 0.0001; // Спрощено для прикладу
-                        double maxMass = 1000.0;
-                        double massNorm = (planet->getMass() - minMass) / (maxMass - minMass);
-                        if(massNorm > 1.0) massNorm = 1.0;
-                        double radius2 = 4.0 + 6.0 * massNorm; // Розмір точки планети
-
-                        painter.setBrush(planet->getColor());
-                        painter.drawEllipse(planetCenter, radius2, radius2);
-                    }
                 }
             } else if (obj->getType() == "Nebula") {
                 Nebula *nebula = dynamic_cast<Nebula *>(obj);
