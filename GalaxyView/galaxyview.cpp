@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "DijkstraPathList.h"
+#include "GalaxyFactory.h"
 static constexpr double PHYSICS_MASS_SCALE = 1.0e-7;
 
 GalaxyView::GalaxyView(QWidget *parent) : QWidget(parent), ui(new Ui::GalaxyView) {
@@ -215,7 +216,7 @@ void GalaxyView::generateAndDisplayGalaxy(const nlohmann::json &data, RandomGene
 
     galaxy = new Galaxy<GraphList<CelestialObject *> >(randomGalaxyName);
 
-    galaxy->generateGalaxy(data, rng);
+    GalaxyFactory::populateGalaxy(*galaxy, data, rng);
 
     this->dataPtr = const_cast<nlohmann::json *>(&data);
     this->rngPtr = &rng;

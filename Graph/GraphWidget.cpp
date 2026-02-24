@@ -212,7 +212,8 @@ void GraphWidget::paintEvent(QPaintEvent *event) {
             bool hasRings = planet->hasRings();
             double ringInnerRadius = planetRadius * planet->getRingInnerFactor();
             double ringOuterRadius = planetRadius * planet->getRingOuterFactor();
-            QColor ringColor = planet->getRingColor();
+            RGBColor rc = planet->getRingColor();
+            QColor ringColor(rc.r, rc.g, rc.b, rc.a);
             double ringTilt = 0.3;
             double timeSec = QDateTime::currentMSecsSinceEpoch() / 1000.0;
             int ringCount = planetRng.getInt(6000, 15000);
@@ -305,7 +306,11 @@ void GraphWidget::paintEvent(QPaintEvent *event) {
                 }
             }
 
-            painter.setBrush(planet->getColor());
+            // Конвертуємо наш доменний колір у QColor
+            RGBColor pc = planet->getColor();
+            QColor planetQColor(pc.r, pc.g, pc.b, pc.a);
+
+            painter.setBrush(planetQColor);
             painter.setPen(Qt::NoPen);
             painter.drawEllipse(QPointF(centerX, centerY), planetRadius, planetRadius);
 
@@ -317,7 +322,7 @@ void GraphWidget::paintEvent(QPaintEvent *event) {
             int spotsCount = planetRng.getInt(5, 12);
             for (int k = 0; k < spotsCount; ++k) {
                 bool darker = planetRng.getBool();
-                QColor spotColor = darker ? planet->getColor().darker(140) : planet->getColor().lighter(140);
+                QColor spotColor = darker ? planetQColor.darker(140) : planetQColor.lighter(140);
                 spotColor.setAlpha(180);
 
                 painter.setBrush(spotColor);
@@ -568,8 +573,8 @@ void GraphWidget::paintEvent(QPaintEvent *event) {
                     if(massNorm < 0.0) massNorm = 0.0;
 
                     double localRadius = 2.0 + 4.0 * massNorm;
-
-                    painter.setBrush(planet->getColor());
+                    RGBColor sysPc = planet->getColor();
+                    painter.setBrush(QColor(sysPc.r, sysPc.g, sysPc.b, sysPc.a));
                     painter.drawEllipse(planetCenter, localRadius, localRadius);
                 }
             }

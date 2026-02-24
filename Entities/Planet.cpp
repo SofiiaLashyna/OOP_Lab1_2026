@@ -57,7 +57,7 @@ void Planet::setOrbit(double newOrbit) {
 }
 
 
-QColor Planet::getColor() const{
+RGBColor Planet::getColor() const{
     return color;
 }
 
@@ -69,15 +69,21 @@ std::string Planet::getTexturePath() const {
     return texturePath;
 }
 
-void Planet::setColor(QColor newColor) {
-    color = newColor;
+void Planet::setColor(int r, int g, int b, int a) {
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.a = a;
 }
 
-void Planet::setRings(bool hasRings, double innerFactor, double outerFactor, QColor rColor) {
+void Planet::setRings(bool hasRings, double innerFactor, double outerFactor, int r, int g, int b, int a) {
     rings = hasRings;
     ringInnerRadiusFactor = innerFactor;
     ringOuterRadiusFactor = outerFactor;
-    ringColor = rColor;
+    ringColor.r = r;
+    ringColor.g = g;
+    ringColor.b = b;
+    ringColor.a = a;
 }
 
 bool Planet::hasRings() const {
@@ -92,7 +98,7 @@ double Planet::getRingOuterFactor() const {
     return ringOuterRadiusFactor;
 }
 
-QColor Planet::getRingColor() const {
+RGBColor Planet::getRingColor() const {
     return ringColor;
 }
 

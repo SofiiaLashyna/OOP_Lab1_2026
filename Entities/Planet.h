@@ -1,12 +1,16 @@
 #ifndef PLANET_H
 #define PLANET_H
-#include <QColor>
 
 #include "CelestialObject.h"
 /**
  * @file Planet.h
  * @brief Defines the Planet class, derived from CelestialObject.
  */
+
+struct RGBColor {
+    int r, g, b;
+    int a = 255;
+};
 
 /**
  * @class Planet
@@ -21,15 +25,17 @@ private:
     double orbitSpeed;
     double inclination;
     bool habitable;
-    QColor color = QColor(0, 0, 0);
+    RGBColor color = {0, 0, 0};
     std::string texturePath;
     bool rings = false;
     double ringInnerRadiusFactor = 0.0;
     double ringOuterRadiusFactor = 0.0;
-    QColor ringColor = Qt::transparent;
+    RGBColor ringColor = {0,0,0};
+
 public:
     /// Enum representing all supported planet types.
     enum class planetType { Gas_Giant, Dwarf, Terrestrial_Planet };
+
     /**
          * @brief Constructor for the Planet class.
          * @param name The name of the planet.
@@ -42,35 +48,40 @@ public:
          * @throws std::invalid_argument If mass or orbit is zero or negative.
          */
     Planet(const std::string &name, double mass, double orbit, double speed, double angle, planetType type, bool life);
+
     /**
           * @brief Displays all information about the planet (overrides CelestialObject).
         */
     void displayInfo() const override;
+
     /**
          * @brief Gets the orbital radius of the planet.
          * @return The orbital radius.
          */
     double getOrbit() const;
+
     /**
          * @brief Sets the display color for the planet (e.g., in UI).
          * @param newColor The QColor to set.
          */
     void setOrbit(double newOrbit);
 
-    void setColor(QColor newColor);
+    void setColor(int r, int g, int b, int a = 255);
 
-    QColor getColor() const;
+    RGBColor getColor() const;
 
     void setTexturePath(const std::string &path);
 
     std::string getTexturePath() const;
 
     bool isHabitable() const;
+
     /**
         * @brief Sets the habitability status of the planet.
         * @param life The new habitability status.
         */
     void setLifeExistence(bool life);
+
     /**
          * @brief Returns the specific type of the object (overrides CelestialObject).
          * @return The string "Planet".
@@ -83,14 +94,22 @@ public:
 
     void setPlanetType(std::string type);
 
-    void setRings(bool hasRings, double innerFactor = 0.0, double outerFactor = 0.0, QColor rColor = Qt::transparent);
+    void setRings(bool hasRings, double innerFactor = 0.0, double outerFactor = 0.0, int r = 0, int g = 0, int b = 0, int a = 150);
+
     bool hasRings() const;
+
     double getRingInnerFactor() const;
+
     double getRingOuterFactor() const;
-    QColor getRingColor() const;
+
+    RGBColor getRingColor() const;
+
     double getInclination() const;
+
     void setInclination(double angle);
+
     double getSpeed() const;
+
     void setSpeed(double newSpeed);
 
 private:

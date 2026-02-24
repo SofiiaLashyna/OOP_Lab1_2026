@@ -15,31 +15,25 @@ EditPlanetDialog::EditPlanetDialog(Planet *planet, RandomGenerator *rng, QWidget
     nameEdit = new QLineEdit(QString::fromStdString(planet->getName()), this);
     layout->addWidget(nameEdit);
 
-    // 2. Тип
     layout->addWidget(new QLabel("Planet Type:", this));
     typeComboBox = new QComboBox(this);
 
-    // addItem("Те, що бачить юзер", "Те, що йде в код")
     typeComboBox->addItem("Terrestrial Planet", "Terrestrial_Planet");
     typeComboBox->addItem("Gas Giant", "Gas_Giant");
     typeComboBox->addItem("Dwarf Planet", "Dwarf");
 
-    // Встановлюємо поточний вибір
-    // Тут ми шукаємо по "даних" (тобто по рядку типу "Gas_Giant")
     int typeIndex = typeComboBox->findData(QString::fromStdString(planet->getPlanetTypeString())); // Твій геттер
     if (typeIndex != -1) {
         typeComboBox->setCurrentIndex(typeIndex);
     }
     layout->addWidget(typeComboBox);
 
-    // 3. Маса
     layout->addWidget(new QLabel("Mass (Earths):", this));
     massSpinBox = new QDoubleSpinBox(this);
     massSpinBox->setRange(0.0001, 10000.0);
     massSpinBox->setValue(planet->getMass());
     layout->addWidget(massSpinBox);
 
-    // 4. Радіус орбіти
     layout->addWidget(new QLabel("Orbit Radius (AU):", this));
     orbitRadiusSpinBox = new QDoubleSpinBox(this);
     orbitRadiusSpinBox->setRange(0.1, 500.0);
@@ -66,7 +60,6 @@ EditPlanetDialog::EditPlanetDialog(Planet *planet, RandomGenerator *rng, QWidget
     ringsCheckBox->setChecked(planet->hasRings());
     layout->addWidget(ringsCheckBox);
 
-    // Кнопки
     QPushButton *saveButton = new QPushButton("Save", this);
     QPushButton *cancelButton = new QPushButton("Cancel", this);
 
@@ -82,8 +75,6 @@ EditPlanetDialog::EditPlanetDialog(Planet *planet, RandomGenerator *rng, QWidget
 void EditPlanetDialog::saveChanges() {
     planet->setName(nameEdit->text().toStdString());
 
-    // --- ОСЬ ТУТ ВИПРАВЛЕННЯ ---
-    // Беремо дані (другий параметр з addItem), перетворюємо в QString, а потім в std::string
     std::string typeStr = typeComboBox->currentData().toString().toStdString();
     bool typeChanged = (typeStr != planet->getPlanetTypeString());
     planet->setPlanetType(typeStr);
@@ -99,7 +90,7 @@ void EditPlanetDialog::saveChanges() {
                 pColor = QColor::fromHsv(rngPtr->getInt(180, 220), rngPtr->getInt(30, 100),
                                          rngPtr->getInt(200, 255)); // Icy Blue
             else pColor = QColor::fromHsv(rngPtr->getInt(0, 30), rngPtr->getInt(100, 200), rngPtr->getInt(150, 230));
-            // Brownish
+
         } else if (typeStr == "Terrestrial_Planet") {
             int choice = rngPtr->getInt(0, 3);
             if (choice == 0) pColor = QColor::fromHsv(rngPtr->getInt(100, 140), rngPtr->getInt(100, 255),
@@ -120,7 +111,7 @@ void EditPlanetDialog::saveChanges() {
             else pColor = QColor::fromHsv(0, 0, rngPtr->getInt(100, 200)); // Rock
         }
 
-        planet->setColor(pColor);
+        planet->setColor(pColor.red(), pColor.green(), pColor.blue());
     }
 
     planet->setMass(massSpinBox->value());
@@ -129,11 +120,10 @@ void EditPlanetDialog::saveChanges() {
     planet->setInclination(inclinationSpinBox->value());
     planet->setLifeExistence(habitableCheckBox->isChecked());
 
-    // Логіка кілець (без змін)
     bool newHasRings = ringsCheckBox->isChecked();
     if (newHasRings && !planet->hasRings()) {
-        planet->setRings(true, 1.4, 2.2, QColor(200, 200, 200, 150));
+        planet->setRings(true, 1.4, 2.2, 200, 200, 200);
     } else if (!newHasRings) {
-        planet->setRings(false, 0, 0, Qt::transparent);
+        planet->setRings(false, 0, 0, 0, 0, 0);
     }
 }
