@@ -108,6 +108,7 @@ add_executable(Project1
         GalaxyView/EditPlanetDialog.cpp
         Entities/GalaxyFactory.h
         Entities/GalaxyFactory.cpp
+        examples/PerformanceBenchmark.cpp
 )
 
 target_link_libraries(Project1 PRIVATE ProjectLib Qt6::Core Qt6::Widgets Qt6::Quick Qt6::Quick3D Qt6::QuickWidgets BulletDynamics BulletCollision LinearMath)

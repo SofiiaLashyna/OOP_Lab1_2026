@@ -45,7 +45,6 @@ public:
         while (!q.empty()) {
             auto [u, _] = q.popMin();
 
-            // Використовуємо метод з базового GraphAlgorithm
             this->printVertexData(g.getVertices()[u].getData());
 
             for (int v = 0; v < n; ++v) {
