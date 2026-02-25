@@ -36,6 +36,16 @@ The transition from the legacy codebase to the updated architecture heavily reli
 The automated data gathered via the *Statistic* plugin (detailed in Section 3) is a direct mathematical representation of the architectural improvements:
 * The reduction of max **LOC (Lines of Code)** from 433 lines in a single file to an average of 60 lines per file is not just a cosmetic change. It quantitatively proves the transition from a monolithic "God Object" (low cohesion) to a modular system (high cohesion). Smaller files directly correlate with the **Principle of Least Astonishment**, as a developer opening `BFSList.h` will immediately and predictably find only BFS logic, lowering the cognitive load and making maintenance significantly easier.
 
+## 1.5. Component-Based Modular Architecture (CMake Restructuring)
+
+To achieve maximum modularity and separate business logic from the graphical user interface, the monolithic build process was refactored into a multi-component architecture using CMake.
+
+1. **`GalaxyEngine` (Static Library):** All domain logic, graph data structures, algorithms (including the new Strategy classes), and physical simulations (Bullet3) were isolated into a dedicated static library. This component is completely independent of the main application's entry point.
+2. **`Project1` (UI Application):** The Qt6 graphical user interface (`MainWindow`, `GalaxyView`, `3DView`) and the `main.cpp` entry point were separated into an executable target that dynamically links against `GalaxyEngine`.
+3. **`Benchmark` & `AllTests`:** Performance profiling and Google Tests were separated into standalone executables that link directly to `GalaxyEngine`. This prevents testing logic from polluting the production UI binary.
+
+This strict separation ensures that the core simulation engine can be easily reused in different environments (e.g., a headless server or a different UI framework) without any structural changes.
+
 ## 2. Performance Profiling
 
 To ensure that the introduction of virtual method dispatches (vtable overhead) did not negatively impact runtime performance, a benchmark was conducted.
